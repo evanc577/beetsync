@@ -2,6 +2,8 @@
 
 [Beets](http://beets.io/) plugin to sync music files in specified playlists to another directory
 
+Note: This plugin is still very alpha. Expect bugs and possibly lost data.
+
 ## Installation
 
 ```bash
@@ -12,7 +14,7 @@ Add the following to your beets config.yaml
 
 ```yaml
 pluginpath:
-  - path/to/beetsync/beetsplug
+  - path/to/beetsplug
 
 relative_to: path/to/beets/library
 playlists_dir: path/to/playlists/directory
@@ -26,11 +28,11 @@ sync:
 ## Usage
 
 ```bash
-beet sync
+$ beet sync
 ```
 
 or 
 
 ```bash
-beet sync name_of_playlist1
+$ beet sync name_of_playlist1
 ```
