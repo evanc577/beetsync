@@ -50,6 +50,9 @@ class BeetSync(BeetsPlugin):
         pl_filename = od['playlist'].get()
         pl_file = os.path.expanduser(os.path.join(pl_dir, pl_filename))
         output_dir = os.path.expanduser(od['output_dir'].get())
+        self.symlink = False
+        if 'symlink' in od.get() and od['symlink'].get(bool):
+            self.symlink = True
 
         # create output directory if it doesn't exist
         if not os.path.exists(output_dir):
@@ -70,14 +73,10 @@ class BeetSync(BeetsPlugin):
             print('Error: playlist file not found')
 
         # sync files
-        hasher = hashlib.md5()
         for f in files:
             output_path = f
             file_fullpath = os.path.join(rel_to, output_path)
-            with open(file_fullpath, 'rb') as f:
-                buf = f.read()
-                hasher.update(buf)
-                self.synced_data[file_fullpath] = hasher.hexdigest()
+            self.synced_data[file_fullpath] = os.path.getmtime(file_fullpath)
             output_fullpath = os.path.join(output_dir, output_path)
             self.sync_one_file(file_fullpath, output_fullpath)
 
@@ -99,16 +98,20 @@ class BeetSync(BeetsPlugin):
         if not os.path.isdir(dest_dirname):
             os.makedirs(dest_dirname)
         if not os.path.exists(dest):
-            copyfile(src, dest)
-            print(src)
+            self.copy_file(src, dest)
             return
         if src not in self.prev_data:
-            copyfile(src, dest)
-            print(src)
+            self.copy_file(src, dest)
             return
         if self.prev_data[src] == self.synced_data[src]:
             return
-        copyfile(src, dest)
+        self.copy_file(src, dest)
+
+    def copy_file(self, src, dest):
+        if self.symlink:
+            os.symlink(src, dest)
+        else:
+            copyfile(src, dest)
         print(src)
 
     def remove_one_file(self, path):
