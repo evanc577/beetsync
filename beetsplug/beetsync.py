@@ -97,6 +97,14 @@ class BeetSync(BeetsPlugin):
             f = f[len(rel_to):].lstrip('/')
             to_del = os.path.join(output_dir, f)
             self.remove_one_file(to_del)
+            filename_lower = to_del.lower()
+            for filetype in self.convert_dict:
+                if filename_lower.endswith(filetype):
+                    to_del_test = to_del[:-1*len(filetype)]
+                    to_del_test = to_del_test + self.convert_dict[filetype]['ext']
+                    if os.path.isfile(to_del_test):
+                        self.remove_one_file(to_del_test)
+                        break
 
         # remove empty directories
         self.remove_empty_directories(output_dir)
@@ -117,6 +125,7 @@ class BeetSync(BeetsPlugin):
         for filetype in self.convert_dict:
             if dest_lower.endswith(filetype):
                 dest_test = dest[:-1*len(filetype)]
+                dest_test = dest_test + filetype
                 if os.path.isfile(dest_test):
                     return
         self.copy_file(src, dest)
