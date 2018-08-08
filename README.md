@@ -16,13 +16,15 @@ Add the following to your beets config.yaml
 pluginpath:
   - path/to/beetsplug
 
-relative_to: path/to/beets/library
-playlists_dir: path/to/playlists/directory
-sync:
-  - output_dir: path/to/sync/directory1
-    playlists: name_of_playlist1
-  - output_dir: path/to/sync/directory2
-    playlists: name_of_playlist2
+beetsync:
+  relative_to: path/to/beets/library
+  playlists_dir: path/to/playlists/directory
+  sync:
+    - output_dir: path/to/sync/directory1
+      playlists: name_of_playlist1
+    - output_dir: path/to/sync/directory2
+      playlists: name_of_playlist2
+      symlink: True
 ```
 
 ## Usage
