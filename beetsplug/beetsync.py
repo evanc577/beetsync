@@ -125,7 +125,7 @@ class BeetSync(BeetsPlugin):
         for filetype in self.convert_dict:
             if dest_lower.endswith(filetype):
                 dest_test = dest[:-1*len(filetype)]
-                dest_test = dest_test + filetype
+                dest_test = dest_test + self.convert_dict[filetype]['ext']
                 if os.path.isfile(dest_test):
                     return
         self.copy_file(src, dest)
