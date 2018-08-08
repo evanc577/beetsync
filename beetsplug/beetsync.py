@@ -3,6 +3,7 @@ from beets.ui import Subcommand
 from beets import config
 import pickle
 import os
+import subprocess
 from shutil import copyfile
 import hashlib
 
@@ -50,6 +51,15 @@ class BeetSync(BeetsPlugin):
         pl_filename = od['playlist'].get()
         pl_file = os.path.expanduser(os.path.join(pl_dir, pl_filename))
         output_dir = os.path.expanduser(od['output_dir'].get())
+        convert_list = None
+        if 'convert' in od.get():
+            convert_list = od['convert'].get()
+
+        self.convert_dict = {}
+        for conv in convert_list:
+            for filetype in conv.items():
+                self.convert_dict[filetype[0].lower()] = filetype[1]
+
         self.symlink = False
         if 'symlink' in od.get() and od['symlink'].get(bool):
             self.symlink = True
@@ -71,6 +81,7 @@ class BeetSync(BeetsPlugin):
                     files.append(line.strip())
         except FileNotFoundError:
             print('Error: playlist file not found')
+            return
 
         # sync files
         for f in files:
@@ -97,27 +108,67 @@ class BeetSync(BeetsPlugin):
         dest_dirname = os.path.dirname(dest)
         if not os.path.isdir(dest_dirname):
             os.makedirs(dest_dirname)
-        if not os.path.exists(dest):
-            self.copy_file(src, dest)
-            return
         if src not in self.prev_data:
             self.copy_file(src, dest)
             return
         if self.prev_data[src] == self.synced_data[src]:
             return
+        dest_lower = dest.lower()
+        for filetype in self.convert_dict:
+            if dest_lower.endswith(filetype):
+                dest_test = dest[:-1*len(filetype)]
+                if os.path.isfile(dest_test):
+                    return
         self.copy_file(src, dest)
 
     def copy_file(self, src, dest):
+        # convert if applicable
+        src_lower = src.lower()
+        for filetype in self.convert_dict:
+            if src_lower.endswith(filetype):
+                in_file = src[:-1*len(filetype)]
+                temp_file = ""
+                # create temp wav file if specified
+                if 'temp_wav' in self.convert_dict[filetype] and \
+                        self.convert_dict[filetype]['temp_wav']:
+                    temp_dir = os.path.join(self.data_path, 'temp')
+                    if not os.path.isdir(temp_dir):
+                        os.makedirs(temp_dir)
+                    temp_file = os.path.basename(in_file)
+                    temp_file = os.path.join(temp_dir, temp_file + '.wav')
+                    cmd = ['ffmpeg', '-y', '-i', src, temp_file]
+                    subprocess.run(cmd, stderr=subprocess.DEVNULL)
+                    src = temp_file
+
+                dest_dirname = os.path.dirname(dest)
+                out_file = os.path.join(dest_dirname,
+                        os.path.basename(in_file) + self.convert_dict[filetype]['ext'])
+                cmd = []
+                cmd = [str(x) for x in self.convert_dict[filetype]['cmd']]
+                cmd.append(src)
+                cmd.append(out_file)
+                subprocess.run(cmd, stderr=subprocess.DEVNULL)
+                print(out_file)
+                if os.path.isfile(temp_file):
+                    os.remove(temp_file)
+                return
+
         if self.symlink:
             os.symlink(src, dest)
         else:
             copyfile(src, dest)
-        print(src)
+        print(dest)
+
 
     def remove_one_file(self, path):
-        if os.path.exists(path):
+        if os.path.islink(path):
+            os.unlink(path)
+            print('removed %s' % path)
+            return
+        if os.path.isfile(path):
             os.remove(path)
             print('removed %s' % path)
+            return
 
     def remove_empty_directories(self, path, remove_root=True):
         if not os.path.isdir(path):
