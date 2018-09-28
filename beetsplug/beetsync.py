@@ -221,8 +221,6 @@ class BeetSync(BeetsPlugin):
                 cmd.append(out_file)
                 subprocess.run(cmd, stderr=subprocess.DEVNULL)
                 print(out_file)
-                if os.path.isfile(temp_file):
-                    os.remove(temp_file)
                 return
 
         if self.symlink:
